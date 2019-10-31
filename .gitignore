@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+test
+train
+users_map
+utility
+movie_map
 
 # C extensions
 *.so
