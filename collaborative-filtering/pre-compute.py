@@ -19,10 +19,8 @@ with open(filename, 'r') as f:
         List.append(list_temp)
 
 df = pd.DataFrame(List, columns=columns)
-test_data, train_data = train_test_split(df, test_size=0.2)
 df.drop('timestamp', axis=1, inplace=True)
-
-print(df.head())
+test_data, train_data = train_test_split(df, test_size=0.2)
 
 movies = df['movie_id'].unique()
 users = df['user_id'].unique()
@@ -55,15 +53,12 @@ print(utility_mat.shape)
 print(len(df))
 a = 0
 
-for index, row in df.iterrows():
+for index, row in train_data.iterrows():
     a += 1
-    if a == len(df) - 1:
+    if a == len(train_data) - 1:
         break
     utility_mat[users_map[row['user_id']]
                 ][movie_map[row['movie_id']]] = int(row['rating'])
-
-for i in range(len(utility_mat[1])):
-    print(utility_mat[1][i])
 
 ''' persistent storage for the utility matrix and other data '''
 
