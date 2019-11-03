@@ -6,14 +6,20 @@ from time import time
 
 
 def loadFile(filename):
-    ''' loads file saved after running preprocess.py '''
+    '''
+    Loads file saved after running preprocess.py.
+    return: opened file object
+    '''
     file = open(filename, 'rb')
     filename = pickle.load(file)
     return filename
 
 
 def centredCosine(utility_matrix):
-    ''' converts a matrix to its centerd cosine '''
+    '''
+    Converts a matrix to its centerd cosine.
+    return: centred cosine matrix
+    '''
     utility_matrix = utility_matrix.astype("float")
     no_of_rows = utility_matrix.shape[0]
     no_of_cols = utility_matrix.shape[1]
@@ -27,11 +33,13 @@ def centredCosine(utility_matrix):
     return mat
 
 
-def userUserCollabFilter():
-    pass
-
-
 def itemItemCollabFilter(utility_matrix, test, movies_map, users_map, ratings):
+    '''
+    Fills the spaces in the utility matrix using the test set data
+    return: actual rating -- List
+            prediction -- List
+            pearson similarity - 2d numpy matrix
+    '''
     mat = np.transpose(utility_matrix)
     ratings = np.transpose(ratings)
     mat = centredCosine(mat)
@@ -63,7 +71,12 @@ def itemItemCollabFilter(utility_matrix, test, movies_map, users_map, ratings):
     return actual_rating, prediction, pearson_similarity
 
 
-def rootMeanSquareError(actual_rating, prediction):
+def computeError(actual_rating, prediction):
+    '''
+    Computes root mean square error and mean absolute error
+    return: rmse -- root mean square (float)
+            mean -- mean absolute error (float)
+    '''
     n = len(prediction)
     actual_rating = np.array(actual_rating)
     prediction = np.array(prediction)
@@ -73,6 +86,10 @@ def rootMeanSquareError(actual_rating, prediction):
 
 
 def topKRecommendation(k, movie_map, similarity, movie_id):
+    '''
+    Generates top k recommendations similar to a movie
+    return: top_similar -- list of tuples(similarity, movie_no)
+    '''
     row_no = movie_map[movie_id]
     top_similar = []
     for i in range(len(movie_map)):
@@ -97,7 +114,7 @@ def main():
     utility_matrix = utility_matrix.astype("float")
     actual_rating, prediction, similarity = itemItemCollabFilter(
         utility_matrix, test_data, movies_map, users_map, ratings)
-    rmse, mae = rootMeanSquareError(actual_rating, prediction)
+    rmse, mae = computeError(actual_rating, prediction)
     comp_time_end = time()
     comp_time = comp_time_end - comp_time_start
     print("computation time ::  ", comp_time, 's')
@@ -106,6 +123,10 @@ def main():
 
     recommendations = topKRecommendation(4, movies_map, similarity, "102")
     print("recommendations for the user ", recommendations)
+
+    file_handler = open("similarity", 'wb+')
+    pickle.dump(similarity, file_handler)
+
     end_time = time()
     total_time = end_time - load_time_start
     print("total time taken :: ", total_time)

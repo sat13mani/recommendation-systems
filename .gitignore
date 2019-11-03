@@ -8,6 +8,7 @@ users_map
 utility
 movie_map
 .vscode/
+similarity
 
 # C extensions
 *.so
