@@ -20,7 +20,7 @@ with open(filename, 'r') as f:
 
 df = pd.DataFrame(List, columns=columns)
 df.drop('timestamp', axis=1, inplace=True)
-test_data, train_data = train_test_split(df, test_size=0.2)
+test_data, train_data = train_test_split(df, test_size=0.3)
 
 movies = df['movie_id'].unique()
 users = df['user_id'].unique()
@@ -53,9 +53,9 @@ print(utility_mat.shape)
 print(len(df))
 a = 0
 
-for index, row in train_data.iterrows():
+for index, row in df.iterrows():
     a += 1
-    if a == len(train_data) - 1:
+    if a == len(df) - 1:
         break
     utility_mat[users_map[row['user_id']]
                 ][movie_map[row['movie_id']]] = int(row['rating'])
