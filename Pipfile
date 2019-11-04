@@ -12,6 +12,7 @@ pandas = "*"
 scikit-learn = "*"
 autopep8 = "*"
 scipy = "*"
+jupyter = "*"
 
 [requires]
 python_version = "3.7"

@@ -8,6 +8,8 @@ users_map
 utility
 movie_map
 .vscode/
+*.pickle
+*.ipynb
 similarity
 
 # C extensions
