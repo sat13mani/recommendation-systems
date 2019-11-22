@@ -1,9 +1,12 @@
+import os
 import pickle
 import numpy
 import pandas
+from copy import deepcopy
 from sklearn.model_selection import train_test_split
 
-from .config import movie_dataset, rating_dataset, users_dataset, utility_matrix_bin_path
+from .config import movie_dataset, rating_dataset, users_dataset, \
+    utility_matrix_bin_path, test_bin_path, train_bin_path
 
 
 def load(filename, column):
@@ -48,23 +51,35 @@ def generate_utility_matrix():
 
     num_users = list(user['uid'].unique())
     num_movies = list(movie['mid'].unique())
+    num_users.sort()
+    num_movies.sort()
+
     utility_matrix = numpy.full((len(num_users), len(num_movies)), 0)
+    train_tuple = []
 
     for index in rate_train.index:
         user_row = num_users.index(rate_train['uid'][index])
         movie_col = num_movies.index(rate_train['mid'][index])
-        rating = rate_train['rating'][index]
-        print(user_row, movie_col, rating)
-        utility_matrix[user_row][movie_col] = int(rating)
+        rating = int(rate_train['rating'][index])
+        utility_matrix[user_row][movie_col] = rating
+
+        train_tuple.append((user_row, movie_col, rating))
+
+
+    utility_matrix = pandas.DataFrame.from_records(
+        utility_matrix, index=num_users, columns=num_movies)
+    
+    save(train_tuple, train_bin_path)
+    save(rate_test, test_bin_path)
 
     return utility_matrix
 
 
-def save(matrix):
+def save(matrix, file_path):
     '''
-    Saves the utility matrix in a binary file.
+    Saves the a matrix in a binary file.
     '''
-    with open(utility_matrix_bin_path, 'wb') as f:
+    with open(file_path, 'wb') as f:
         pickle.dump(matrix, f)
 
 
@@ -74,8 +89,12 @@ def preprocess():
     :return
         utility_matrix numpy.ndarray
     '''
-    utility_matrix = generate_utility_matrix()
-    save(utility_matrix)
+    if not os.path.exists(utility_matrix_bin_path):
+        utility_matrix = generate_utility_matrix()
+        save(utility_matrix, utility_matrix_bin_path)
+    else:
+        with open(utility_matrix_bin_path, 'rb') as f:
+            utility_matrix = pickle.load(f)
     return utility_matrix
 
 

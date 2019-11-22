@@ -11,3 +11,5 @@ users_dataset = os.path.join(dataset, "users.dat")
 
 binary = os.path.join(package_dir, binary_dir)
 utility_matrix_bin_path = os.path.join(binary, "utility_matrix.pickle")
+test_bin_path = os.path.join(binary, "test_data.pickle")
+train_bin_path = os.path.join(binary, "train_data.pickle")
