@@ -8,19 +8,19 @@ from .config import train_bin_path
 
 
 class LatentFactor:
-    '''
+    """
     Latent Factor Model describing all the various
     factors required.
-    '''
+    """
 
     def __init__(self, alpha=0.1, beta=0.01, k=2, epoch=20):
-        '''
+        """
         :param
         alpha: learning rate for stochastic gradient descent
         beta: regularisation constant for penalising magnitudes
         k: number of hidden factors used while factorising
         epoch: number of iterations performed for stochastic gradient descent
-        '''
+        """
         self.learning_rate = alpha
         self.regularisation_const = beta
         self.utility_matrix = preprocess()
@@ -34,10 +34,12 @@ class LatentFactor:
         self.global_avg_rating = numpy.mean(self.all_ratings[:, 2])
 
     def get_train_tuple(self):
+        """Loads training dataset from the binary file"""
         with open(train_bin_path, 'rb') as f:
             return pickle.load(f)
 
     def fit(self):
+        """Trains our model using the training data."""
         # dimension : u X k
         user_matrix = numpy.random.normal(
             scale=1./self.num_factors, size=(self.num_users, self.num_factors))
@@ -74,6 +76,7 @@ class LatentFactor:
         self.item_bias = item_bias
 
     def predict(self, i, j):
+        """Returns the predicted value by the model"""
         return (
             self.user_bias[i] +
             self.item_bias[j] +
@@ -82,6 +85,7 @@ class LatentFactor:
         )
 
     def get_rms_error(self):
+        """Returns the Root Mean Square Error of the model"""
         error = 0
         predicted_matrix = self.get_utility_matrix()
         N = len(self.all_ratings)
@@ -95,6 +99,7 @@ class LatentFactor:
         return math.sqrt(error/N)
 
     def get_mean_abs_error(self):
+        """Returns the Mean Absolute Error of the model"""
         error = 0
         predicted_matrix = self.get_utility_matrix()
         N = len(self.all_ratings)
@@ -108,6 +113,7 @@ class LatentFactor:
         return error/N
 
     def get_utility_matrix(self):
+        """Returns the predicted utility matrix after training the model"""
         return (
             self.global_avg_rating +
             self.user_bias[:, numpy.newaxis] +
@@ -115,4 +121,5 @@ class LatentFactor:
             self.user_matrix.dot(self.item_matrix.T))
 
     def __str__(self):
-        return str(numpy.matmul(self.user_matrix, numpy.transpose(self.item_matrix)))
+        """Returns the string representation of the model"""
+        return str(self.get_utility_matrix())

@@ -9,14 +9,14 @@ from .config import movie_dataset, rating_dataset, users_dataset, \
 
 
 def load(filename, column):
-    '''
+    """
     Reads a binary file to load dataset.
     :param
         filename 
         column Used to label the dataframe
     :return
         Pandas.Dataframe Contains the dataset.
-    '''
+    """
     with open(filename, 'r', encoding='ISO-8859-1') as f:
         text = str(f.read()).strip().split('\n')
         return pandas.DataFrame.from_records(
@@ -24,9 +24,9 @@ def load(filename, column):
 
 
 def get_dataset():
-    '''
+    """
     Splits given dataset into 70% training and 30% test dataset.
-    '''
+    """
     rating = load(rating_dataset, column=['uid', 'mid', 'rating', 'time'])
     rating.drop(labels=['time'], axis=1, inplace=True)
 
@@ -34,11 +34,11 @@ def get_dataset():
 
 
 def generate_utility_matrix():
-    '''
+    """
     Loads dataset and generates a utility matrix (user X item ratings).
     :returns
         utility_matrix numpy.ndarray
-    '''
+    """
     movie = load(movie_dataset, column=['mid', 'title', 'genre'])
     user = load(users_dataset, column=[
                 'uid', 'sex', 'age', 'occupation', 'zip-code'])
@@ -74,19 +74,19 @@ def generate_utility_matrix():
 
 
 def save(matrix, file_path):
-    '''
+    """
     Saves the a matrix in a binary file.
-    '''
+    """
     with open(file_path, 'wb') as f:
         pickle.dump(matrix, f)
 
 
 def preprocess():
-    '''
+    """
     Wrapper function for preprocessing data.
     :return
         utility_matrix numpy.ndarray
-    '''
+    """
     if not os.path.exists(utility_matrix_bin_path):
         utility_matrix = generate_utility_matrix()
         save(utility_matrix, utility_matrix_bin_path)
