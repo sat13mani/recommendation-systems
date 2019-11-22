@@ -1,4 +1,5 @@
 import numpy
+import math
 import pickle
 from .preprocessor import preprocess
 from .config import train_bin_path
@@ -39,7 +40,7 @@ class LatentFactor:
         for epoch in range(self.num_epochs):
             temp_util_matrix = numpy.matmul(
                 user_matrix, numpy.transpose(item_matrix))
-                
+
             for rating_tuple in self.all_ratings:
                 user, movie, rating = rating_tuple
 
@@ -52,6 +53,37 @@ class LatentFactor:
 
         self.user_matrix = user_matrix
         self.item_matrix = item_matrix
+
+        print("Mean Absolute Error : {}".format(self.get_mean_abs_error()))
+        print("Root Mean Square Error : {}".format(self.get_rms_error()))
+
+    def get_rms_error(self):
+        error = 0
+        predicted_matrix = numpy.matmul(
+            self.user_matrix, numpy.transpose(self.item_matrix))
+        N = len(self.all_ratings)
+
+        for rating_tuple in self.all_ratings:
+            user, movie, rating = rating_tuple
+
+            residual = rating - predicted_matrix[user - 1, movie - 1]
+            error += pow(residual, 2)
+
+        return math.sqrt(error/N)
+
+    def get_mean_abs_error(self):
+        error = 0
+        predicted_matrix = numpy.matmul(
+            self.user_matrix, numpy.transpose(self.item_matrix))
+        N = len(self.all_ratings)
+
+        for rating_tuple in self.all_ratings:
+            user, movie, rating = rating_tuple
+
+            residual = rating - predicted_matrix[user - 1, movie - 1]
+            error += math.fabs(residual)
+
+        return error/N
 
     def __str__(self):
         return str(numpy.matmul(self.user_matrix, numpy.transpose(self.item_matrix)))

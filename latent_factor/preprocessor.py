@@ -2,7 +2,6 @@ import os
 import pickle
 import numpy
 import pandas
-from copy import deepcopy
 from sklearn.model_selection import train_test_split
 
 from .config import movie_dataset, rating_dataset, users_dataset, \
@@ -65,10 +64,9 @@ def generate_utility_matrix():
 
         train_tuple.append((user_row, movie_col, rating))
 
-
     utility_matrix = pandas.DataFrame.from_records(
         utility_matrix, index=num_users, columns=num_movies)
-    
+
     save(train_tuple, train_bin_path)
     save(rate_test, test_bin_path)
 
