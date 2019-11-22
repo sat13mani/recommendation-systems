@@ -1,30 +1,37 @@
 import numpy
-import math
 import pickle
+
+import math
+
 from .preprocessor import preprocess
 from .config import train_bin_path
 
 
 class LatentFactor:
     '''
-    Latent Factor Model describing all the various 
-    factors required. 
+    Latent Factor Model describing all the various
+    factors required.
     '''
 
     def __init__(self, alpha=0.1, beta=0.01, k=2, epoch=20):
         '''
-        Intialises the object.
+        :param
+        alpha: learning rate for stochastic gradient descent
+        beta: regularisation constant for penalising magnitudes
+        k: number of hidden factors used while factorising
+        epoch: number of iterations performed for stochastic gradient descent
         '''
         self.learning_rate = alpha
         self.regularisation_const = beta
         self.utility_matrix = preprocess()
-        self.num_factors = 3
+        self.num_factors = k
         self.num_epochs = epoch
 
         self.num_users = len(self.utility_matrix)
         self.num_items = len(self.utility_matrix[0])
 
-        self.all_ratings = self.get_train_tuple()
+        self.all_ratings = numpy.array(self.get_train_tuple())
+        self.global_avg_rating = numpy.mean(self.all_ratings[:, 2])
 
     def get_train_tuple(self):
         with open(train_bin_path, 'rb') as f:
@@ -37,30 +44,46 @@ class LatentFactor:
         item_matrix = numpy.random.normal(
             scale=1./self.num_factors, size=(self.num_items, self.num_factors))
 
+        user_bias = numpy.zeros(self.num_users)
+        item_bias = numpy.zeros(self.num_items)
+
         for epoch in range(self.num_epochs):
             temp_util_matrix = numpy.matmul(
                 user_matrix, numpy.transpose(item_matrix))
 
-            for rating_tuple in self.all_ratings:
-                user, movie, rating = rating_tuple
+            for user, movie, rating in self.all_ratings:
 
-                error = rating - temp_util_matrix[user - 1][movie - 1]
+                error = (rating - temp_util_matrix[user - 1][movie - 1] -
+                         self.global_avg_rating - user_bias[user - 1] - item_bias[movie - 1])
+
+                temp_user_matrix = user_matrix[user - 1, :]
 
                 user_matrix[user - 1, :] += self.learning_rate * (
                     error * item_matrix[movie - 1, :] - self.regularisation_const * user_matrix[user - 1, :])
                 item_matrix[movie - 1, :] += self.learning_rate * (
-                    error * user_matrix[user - 1, :] - self.regularisation_const * item_matrix[movie - 1, :])
+                    error * temp_user_matrix - self.regularisation_const * item_matrix[movie - 1, :])
+
+                user_bias[user - 1] += (self.learning_rate *
+                                        (error - self.regularisation_const * user_bias[user - 1]))
+                item_bias[movie - 1] += (self.learning_rate *
+                                         (error - self.regularisation_const * item_bias[movie - 1]))
 
         self.user_matrix = user_matrix
         self.item_matrix = item_matrix
+        self.user_bias = user_bias
+        self.item_bias = item_bias
 
-        print("Mean Absolute Error : {}".format(self.get_mean_abs_error()))
-        print("Root Mean Square Error : {}".format(self.get_rms_error()))
+    def predict(self, i, j):
+        return (
+            self.user_bias[i] +
+            self.item_bias[j] +
+            self.global_avg_rating +
+            self.user_matrix[i, :].dot(self.item_matrix[j, :].T)
+        )
 
     def get_rms_error(self):
         error = 0
-        predicted_matrix = numpy.matmul(
-            self.user_matrix, numpy.transpose(self.item_matrix))
+        predicted_matrix = self.get_utility_matrix()
         N = len(self.all_ratings)
 
         for rating_tuple in self.all_ratings:
@@ -73,8 +96,7 @@ class LatentFactor:
 
     def get_mean_abs_error(self):
         error = 0
-        predicted_matrix = numpy.matmul(
-            self.user_matrix, numpy.transpose(self.item_matrix))
+        predicted_matrix = self.get_utility_matrix()
         N = len(self.all_ratings)
 
         for rating_tuple in self.all_ratings:
@@ -84,6 +106,13 @@ class LatentFactor:
             error += math.fabs(residual)
 
         return error/N
+
+    def get_utility_matrix(self):
+        return (
+            self.global_avg_rating +
+            self.user_bias[:, numpy.newaxis] +
+            self.item_bias[numpy.newaxis:, ] +
+            self.user_matrix.dot(self.item_matrix.T))
 
     def __str__(self):
         return str(numpy.matmul(self.user_matrix, numpy.transpose(self.item_matrix)))
