@@ -33,21 +33,35 @@ def train_test_validation_split():
     train, test = train_test_split(rating, test_size=0.3)
     test, validation = train_test_split(test, test_size=0.5)
 
-    return (train, test, validation)
+    return (train.astype(int), test.astype(int), validation.astype(int))
 
+def dataset_tuple(narray, num_users, num_movies):
+    t_list = []
+    for index in narray.index:
+        user_row = num_users.index(narray['uid'][index])
+        movie_col = num_movies.index(narray['mid'][index])
+        rating = int(narray['rating'][index])
 
-def generate_utility_matrix():
+        t_list.append((user_row, movie_col, rating))
+    return t_list
+
+def preprocess():
     """
     Loads dataset and generates a utility matrix (user X item ratings).
     :returns
         utility_matrix numpy.ndarray
     """
     movie = load(movie_dataset, column=['mid', 'title', 'genre'])
+    movie.drop(labels=['title', 'genre'],
+                axis=1, inplace=True)
+    movie = movie.astype(int)
+
     user = load(users_dataset, column=[
                 'uid', 'sex', 'age', 'occupation', 'zip-code'])
+    user.drop(labels=['sex', 'age', 'occupation', 'zip-code'],
+              axis=1, inplace=True)
+    user = user.astype(int)
 
-    user.drop(labels=['sex', 'age', 'occupation',
-                      'zip-code'], axis=1, inplace=True)
 
     train_data, test_data, validation_data = train_test_validation_split()
 
@@ -56,25 +70,14 @@ def generate_utility_matrix():
     num_users.sort()
     num_movies.sort()
 
-    utility_matrix = numpy.full((len(num_users), len(num_movies)), 0)
-    train_tuple = []
+    train_tuple = dataset_tuple(train_data, num_users, num_movies)
+    test_tuple = dataset_tuple(test_data, num_users, num_movies)
+    validation_tuple = dataset_tuple(validation_data, num_users, num_movies)
 
-    for index in train_data.index:
-        user_row = num_users.index(train_data['uid'][index])
-        movie_col = num_movies.index(train_data['mid'][index])
-        rating = int(train_data['rating'][index])
-        utility_matrix[user_row][movie_col] = rating
-
-        train_tuple.append((user_row, movie_col, rating))
-
-    utility_matrix = pandas.DataFrame.from_records(
-        utility_matrix, index=num_users, columns=num_movies)
-
+    save((len(num_users), len(num_movies)), utility_matrix_bin_path)
     save(train_tuple, train_bin_path)
-    save(test_data, test_bin_path)
-    save(validation_data, validation_bin_path)
-
-    return utility_matrix
+    save(test_tuple, test_bin_path)
+    save(validation_tuple, validation_bin_path)
 
 
 def save(matrix, file_path):
@@ -84,21 +87,5 @@ def save(matrix, file_path):
     with open(file_path, 'wb') as f:
         pickle.dump(matrix, f)
 
-
-def preprocess():
-    """
-    Wrapper function for preprocessing data.
-    :return
-        utility_matrix numpy.ndarray
-    """
-    if not os.path.exists(utility_matrix_bin_path):
-        utility_matrix = generate_utility_matrix()
-        save(utility_matrix, utility_matrix_bin_path)
-    else:
-        with open(utility_matrix_bin_path, 'rb') as f:
-            utility_matrix = pickle.load(f)
-    return utility_matrix
-
-
 if __name__ == "__main__":
-    utility_matrix = preprocess()
+    preprocess()
