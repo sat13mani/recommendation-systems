@@ -5,7 +5,7 @@ import pandas
 from sklearn.model_selection import train_test_split
 
 from .config import movie_dataset, rating_dataset, users_dataset, \
-    utility_matrix_bin_path, test_bin_path, train_bin_path
+    utility_matrix_bin_path, test_bin_path, train_bin_path, validation_bin_path
 
 
 def load(filename, column):
@@ -23,14 +23,17 @@ def load(filename, column):
             [sentence.split('::') for sentence in text], columns=column)
 
 
-def get_dataset():
+def train_test_validation_split():
     """
     Splits given dataset into 70% training and 30% test dataset.
     """
     rating = load(rating_dataset, column=['uid', 'mid', 'rating', 'time'])
     rating.drop(labels=['time'], axis=1, inplace=True)
 
-    return train_test_split(rating, test_size=0.3)
+    train, test = train_test_split(rating, test_size=0.3)
+    test, validation = train_test_split(test, test_size=0.5)
+
+    return (train, test, validation)
 
 
 def generate_utility_matrix():
@@ -46,7 +49,7 @@ def generate_utility_matrix():
     user.drop(labels=['sex', 'age', 'occupation',
                       'zip-code'], axis=1, inplace=True)
 
-    rate_test, rate_train = get_dataset()
+    train_data, test_data, validation_data = train_test_validation_split()
 
     num_users = list(user['uid'].unique())
     num_movies = list(movie['mid'].unique())
@@ -56,10 +59,10 @@ def generate_utility_matrix():
     utility_matrix = numpy.full((len(num_users), len(num_movies)), 0)
     train_tuple = []
 
-    for index in rate_train.index:
-        user_row = num_users.index(rate_train['uid'][index])
-        movie_col = num_movies.index(rate_train['mid'][index])
-        rating = int(rate_train['rating'][index])
+    for index in train_data.index:
+        user_row = num_users.index(train_data['uid'][index])
+        movie_col = num_movies.index(train_data['mid'][index])
+        rating = int(train_data['rating'][index])
         utility_matrix[user_row][movie_col] = rating
 
         train_tuple.append((user_row, movie_col, rating))
@@ -68,7 +71,8 @@ def generate_utility_matrix():
         utility_matrix, index=num_users, columns=num_movies)
 
     save(train_tuple, train_bin_path)
-    save(rate_test, test_bin_path)
+    save(test_data, test_bin_path)
+    save(validation_data, validation_bin_path)
 
     return utility_matrix
 
