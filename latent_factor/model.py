@@ -84,14 +84,15 @@ class LatentFactor:
     def train(self):
         """Finds the model with least RMS, Mean-Absolute Error, 
         tested against the test dataset"""
-        num_models = 10
-        min_error = (-10000, -10000)
+        num_models = 1
+        min_error = (10000, 10000)
 
         min_user_matrix = None
         min_item_matrix = None
         min_user_bias = None
         min_item_bias = None
 
+        flag = 0
         for iter in range(num_models):
             print ("Model {}".format(iter + 1))
             self.fit()
@@ -105,11 +106,13 @@ class LatentFactor:
                 min_item_bias = self.item_bias
 
                 min_error = temp_error
+                flag = 1
 
-        self.user_matrix = min_user_matrix
-        self.item_matrix = min_item_matrix
-        self.user_bias = min_user_bias
-        self.item_bias = min_item_bias
+        if (flag == 1):
+            self.user_matrix = min_user_matrix
+            self.item_matrix = min_item_matrix
+            self.user_bias = min_user_bias
+            self.item_bias = min_item_bias
 
     def predict(self, i, j):
         """Returns the predicted value by the model"""
