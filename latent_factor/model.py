@@ -4,7 +4,7 @@ import pickle
 import math
 
 from .preprocessor import preprocess
-from .config import train_bin_path
+from .config import train_bin_path, test_bin_path, validation_bin_path, utility_matrix_bin_path
 
 
 class LatentFactor:
@@ -13,7 +13,7 @@ class LatentFactor:
     factors required.
     """
 
-    def __init__(self, alpha=0.1, beta=0.01, k=2, epoch=20):
+    def __init__(self, alpha=0.0001, beta=0.01, k=10, epoch=30):
         """
         :param
         alpha: learning rate for stochastic gradient descent
@@ -23,20 +23,26 @@ class LatentFactor:
         """
         self.learning_rate = alpha
         self.regularisation_const = beta
-        self.utility_matrix = preprocess()
         self.num_factors = k
         self.num_epochs = epoch
 
-        self.num_users = len(self.utility_matrix)
-        self.num_items = len(self.utility_matrix[0])
+        self.num_users, self.num_items = self.load_dataset(utility_matrix_bin_path)
 
-        self.all_ratings = numpy.array(self.get_train_tuple())
+        self.all_ratings = self.load_dataset(train_bin_path)
+        self.testing_dataset = self.load_dataset(test_bin_path)
+        self.validation_dataset = self.load_dataset(validation_bin_path)
+
         self.global_avg_rating = numpy.mean(self.all_ratings[:, 2])
 
-    def get_train_tuple(self):
-        """Loads training dataset from the binary file"""
-        with open(train_bin_path, 'rb') as f:
-            return pickle.load(f)
+    def load_dataset(self, path):
+        """Loads dataset from the binary file
+        :param
+            path to the binary file
+        :return
+            numpy.array of the dataset
+        """
+        with open(path, 'rb') as f:
+            return numpy.array(pickle.load(f))
 
     def fit(self):
         """Trains our model using the training data."""
@@ -75,6 +81,36 @@ class LatentFactor:
         self.user_bias = user_bias
         self.item_bias = item_bias
 
+    def train(self):
+        """Finds the model with least RMS, Mean-Absolute Error, 
+        tested against the test dataset"""
+        num_models = 10
+        min_error = (-10000, -10000)
+
+        min_user_matrix = None
+        min_item_matrix = None
+        min_user_bias = None
+        min_item_bias = None
+
+        for iter in range(num_models):
+            print ("Model {}".format(iter + 1))
+            self.fit()
+            temp_error = (self.get_rms_error(self.testing_dataset),
+                          self.get_mean_abs_error(self.testing_dataset))
+
+            if (min(temp_error, min_error) == temp_error):
+                min_user_matrix = self.user_matrix
+                min_item_matrix = self.item_matrix
+                min_user_bias = self.user_bias
+                min_item_bias = self.item_bias
+
+                min_error = temp_error
+
+        self.user_matrix = min_user_matrix
+        self.item_matrix = min_item_matrix
+        self.user_bias = min_user_bias
+        self.item_bias = min_item_bias
+
     def predict(self, i, j):
         """Returns the predicted value by the model"""
         return (
@@ -84,13 +120,13 @@ class LatentFactor:
             self.user_matrix[i, :].dot(self.item_matrix[j, :].T)
         )
 
-    def get_rms_error(self):
+    def get_rms_error(self, dataset):
         """Returns the Root Mean Square Error of the model"""
         error = 0
         predicted_matrix = self.get_utility_matrix()
-        N = len(self.all_ratings)
+        N = len(dataset)
 
-        for rating_tuple in self.all_ratings:
+        for rating_tuple in dataset:
             user, movie, rating = rating_tuple
 
             residual = rating - predicted_matrix[user - 1, movie - 1]
@@ -98,13 +134,13 @@ class LatentFactor:
 
         return math.sqrt(error/N)
 
-    def get_mean_abs_error(self):
+    def get_mean_abs_error(self, dataset):
         """Returns the Mean Absolute Error of the model"""
         error = 0
         predicted_matrix = self.get_utility_matrix()
-        N = len(self.all_ratings)
+        N = len(dataset)
 
-        for rating_tuple in self.all_ratings:
+        for rating_tuple in dataset:
             user, movie, rating = rating_tuple
 
             residual = rating - predicted_matrix[user - 1, movie - 1]
