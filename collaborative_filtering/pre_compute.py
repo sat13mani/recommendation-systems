@@ -32,6 +32,22 @@ print(no_movies, no_users)
 movie_map = {}
 users_map = {}
 
+movie = {}
+
+filename = os.path.join(cwd, "movies.dat")
+
+with open(filename, 'r') as f:
+    data = f.read()
+    data = data.split("\n")
+    for li in data:
+        l_temp = li.split("::")
+        print(l_temp)
+        if len(l_temp) > 1:
+            movie[l_temp[0]] = l_temp[1]
+
+
+print(movie)
+
 ''' creating a index mapping for users and movies '''
 
 for k, v in enumerate(movies):
@@ -55,6 +71,7 @@ a = 0
 
 for index, row in df.iterrows():
     a += 1
+    print(a, df.shape[0])
     if a == len(df) - 1:
         break
     utility_mat[users_map[row['user_id']]
@@ -76,3 +93,6 @@ pickle.dump(test_data, file_handler)
 
 file_handler = open("train", 'wb+')
 pickle.dump(train_data, file_handler)
+
+file_handler = open("movie", 'wb+')
+pickle.dump(movie, file_handler)
